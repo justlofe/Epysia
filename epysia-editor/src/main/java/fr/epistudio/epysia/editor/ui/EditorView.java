@@ -25,6 +25,7 @@ import fr.epistudio.epysia.editor.command.builtin.AddComponentCommand;
 import fr.epistudio.epysia.editor.command.builtin.InstantiatePrefabCommand;
 import fr.epistudio.epysia.editor.icons.EditorIcon;
 import fr.epistudio.epysia.editor.ui.kit.DocumentTabs;
+import fr.epistudio.epysia.editor.BuildInfo;
 import fr.epistudio.epysia.editor.icons.IconWidgets;
 import fr.epistudio.epysia.editor.tilemap.TileBrush;
 import fr.epistudio.epysia.editor.importer.AssetImportPipeline;
@@ -791,7 +792,7 @@ public final class EditorView implements FrameView {
             return;
         }
         ImGui.textUnformatted(I18n.translate(TextKey.EDITOR_EDITOR_VIEW_ABOUT_ENGINE,
-                ProjectStore.CURRENT_ENGINE_VERSION));
+                BuildInfo.load().version()));
         Texts.muted(I18n.translate(TextKey.EDITOR_EDITOR_VIEW_ABOUT_PROJECT,
                 project.name(), project.engineVersion()));
         ImGui.separator();
