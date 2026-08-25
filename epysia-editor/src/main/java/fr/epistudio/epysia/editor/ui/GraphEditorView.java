@@ -86,6 +86,7 @@ public final class GraphEditorView {
     private static final int PIN_STRIDE = 256;
     private static final int OUTPUT_SLOT_OFFSET = 100;
     private static final int SETTING_SLOT_OFFSET = 200;
+    private static final float DUPLICATE_OFFSET = 28.0f;
     private static final float LITERAL_WIDTH = 90.0f;
     private static final float VECTOR_LITERAL_WIDTH = 168.0f;
     private static final float VARIABLES_PANEL_WIDTH = 240.0f;
@@ -161,7 +162,7 @@ public final class GraphEditorView {
     private final Consumer<Path> onGeneratedShaderSaved;
     private final ShaderGraphPreviewService previews;
     private final VfxPreviewPanel vfxPreview;
-    private final AssetPicker assetPicker;
+    private final AssetFilePicker assetPicker;
     private final BooleanSupplier nodePreviewsEnabled;
     private final Supplier<List<String>> actionNames;
     private final Consumer<Boolean> onNodePreviewsToggled;
@@ -190,7 +191,7 @@ public final class GraphEditorView {
     public GraphEditorView(ComponentRegistry componentRegistry, Notifier notifier,
                            Supplier<SceneDocument> activeDocument, ThumbnailCache thumbnails,
                            Consumer<Path> onGeneratedShaderSaved, ShaderGraphPreviewService previews,
-                           VfxPreviewPanel vfxPreview, AssetPicker assetPicker,
+                           VfxPreviewPanel vfxPreview, AssetFilePicker assetPicker,
                            BooleanSupplier nodePreviewsEnabled, Consumer<Boolean> onNodePreviewsToggled,
                            Supplier<List<String>> actionNames, IconWidgets icons) {
         this.icons = icons;
@@ -500,7 +501,7 @@ public final class GraphEditorView {
         selectMeshItem(path, TextKey.EDITOR_GRAPH_EDITOR_VIEW_MESH_PLANE,
                 ShaderGraphPreviewService.PLANE_MESH, current);
         if (ImGui.selectable(I18n.label(TextKey.EDITOR_GRAPH_EDITOR_VIEW_PROJECT_MESH, PROJECT_MESH_ID))) {
-            assetPicker.open(UploadedMesh.class, picked -> previews.setMeshPath(path, picked));
+            assetPicker.open(UploadedMesh.class, true, picked -> previews.setMeshPath(path, picked));
         }
         ImGui.endCombo();
     }
@@ -938,6 +939,7 @@ public final class GraphEditorView {
         handleLinkCreated(graph);
         handleLinkDestroyed(graph);
         handleDeletions(graph);
+        handleDuplication(graph);
         applyFraming(graph);
         navigation.handleInput();
         handleContextMenu(graph);
@@ -1720,6 +1722,65 @@ public final class GraphEditorView {
         }
         deleteSelectedLinks(graph);
         deleteSelectedNodes(graph);
+    }
+
+    private void handleDuplication(OpenGraph graph) {
+        if (!ImGui.getIO().getKeyCtrl()
+                || !ImGui.isWindowFocused(ImGuiFocusedFlags.RootAndChildWindows)) {
+            return;
+        }
+        if (ImGui.isKeyPressed(ImGuiKey.D) || ImGui.isKeyPressed(ImGuiKey.V)) {
+            duplicateSelectedNodes(graph);
+        }
+    }
+
+    private void duplicateSelectedNodes(OpenGraph graph) {
+        int count = ImNodes.numSelectedNodes();
+        if (count <= 0) {
+            return;
+        }
+        int[] selected = new int[count];
+        ImNodes.getSelectedNodes(selected);
+        Map<Integer, Integer> renumbered = copyNodes(graph, selected);
+        if (renumbered.isEmpty()) {
+            return;
+        }
+        copyEdgesWithin(graph, renumbered);
+        graph.dirty = true;
+        ImNodes.clearNodeSelection();
+        notifier.show(I18n.translate(TextKey.EDITOR_GRAPH_EDITOR_VIEW_TOAST_NODES_DUPLICATED,
+                renumbered.size()));
+    }
+
+    private Map<Integer, Integer> copyNodes(OpenGraph graph, int[] selected) {
+        Map<Integer, Integer> renumbered = new LinkedHashMap<>();
+        for (int nodeId : selected) {
+            Optional<GraphNode> source = graph.asset.findNode(nodeId);
+            if (source.isEmpty() || isProtectedOutputNode(graph, nodeId)) {
+                continue;
+            }
+            renumbered.put(nodeId, copyOf(graph, source.get()).id());
+        }
+        return renumbered;
+    }
+
+    private GraphNode copyOf(OpenGraph graph, GraphNode source) {
+        GraphNode copy = graph.asset.addNode(source.typeKey(),
+                source.positionX() + DUPLICATE_OFFSET, source.positionY() + DUPLICATE_OFFSET);
+        copy.values().putAll(source.values());
+        graph.placedNodes.remove(copy.id());
+        return copy;
+    }
+
+    private static void copyEdgesWithin(OpenGraph graph, Map<Integer, Integer> renumbered) {
+        List<GraphEdge> added = new ArrayList<>();
+        for (GraphEdge edge : graph.asset.edges()) {
+            if (renumbered.containsKey(edge.fromNode()) && renumbered.containsKey(edge.toNode())) {
+                added.add(new GraphEdge(renumbered.get(edge.fromNode()), edge.fromPin(),
+                        renumbered.get(edge.toNode()), edge.toPin()));
+            }
+        }
+        graph.asset.edges().addAll(added);
     }
 
     private void deleteSelectedLinks(OpenGraph graph) {

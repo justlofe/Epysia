@@ -47,6 +47,10 @@ final class ComponentFieldsCodec {
                                Function<GameObject, String> referenceEncoder) {
         writer.key(property.fieldName());
         Object value = property.read();
+        if (value == null) {
+            writeUnset(writer, property.kind());
+            return;
+        }
         switch (property.kind()) {
             case FLOAT -> writer.valueNumber((float) value);
             case INT -> writer.valueNumber((int) value);
@@ -57,12 +61,40 @@ final class ComponentFieldsCodec {
             case VECTOR4 -> writeVector4(writer, (Vector4f) value);
             case SURFACE_UNIFORMS -> SurfaceUniformJson.write(writer, (ShaderUniformValues) value);
             case QUATERNION -> writeQuaternion(writer, (Quaternionf) value);
-            case ENUM -> writer.valueString(value == null ? "" : ((Enum<?>) value).name());
+            case ENUM -> writer.valueString(((Enum<?>) value).name());
             case ASSET_REF -> writeAssetRef(writer, value);
             case GAMEOBJECT_REF -> writeGameObjectReference(writer, value, referenceEncoder);
             case OBJECT_LIST -> writeObjectList(writer, value, referenceEncoder);
             default -> writer.valueString("(unsupported)");
         }
+    }
+
+    private static void writeUnset(JsonWriter writer, ExportedProperty.Kind kind) {
+        switch (kind) {
+            case VECTOR2 -> writeZeroes(writer, 2);
+            case VECTOR3 -> writeZeroes(writer, 3);
+            case VECTOR4 -> writeZeroes(writer, 4);
+            case QUATERNION -> writeIdentityRotation(writer);
+            case OBJECT_LIST -> writer.beginArray().endArray();
+            case SURFACE_UNIFORMS -> writer.beginObject().endObject();
+            case FLOAT, INT -> writer.valueNumber(0);
+            case BOOLEAN -> writer.valueBoolean(false);
+            default -> writer.valueString("");
+        }
+    }
+
+    private static void writeZeroes(JsonWriter writer, int count) {
+        writer.beginArray();
+        for (int index = 0; index < count; index++) {
+            writer.valueNumber(0.0f);
+        }
+        writer.endArray();
+    }
+
+    private static void writeIdentityRotation(JsonWriter writer) {
+        writer.beginArray();
+        writer.valueNumber(0.0f).valueNumber(0.0f).valueNumber(0.0f).valueNumber(1.0f);
+        writer.endArray();
     }
 
     private void writeObjectList(JsonWriter writer, Object value,
