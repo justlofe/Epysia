@@ -416,6 +416,7 @@ public enum TextKey {
     EDITOR_GRAPH_EDITOR_VIEW_TOAST_GENERATED("editor.graph-editor-view.toast.generated"),
     EDITOR_GRAPH_EDITOR_VIEW_TOAST_INCOMPATIBLE_PIN_TYPES("editor.graph-editor-view.toast.incompatible-pin-types"),
     EDITOR_GRAPH_EDITOR_VIEW_TOAST_OUTPUT_NODE_CANNOT_BE_DELETED("editor.graph-editor-view.toast.output-node-cannot-be-deleted"),
+    EDITOR_GRAPH_EDITOR_VIEW_TOAST_NODES_DUPLICATED("editor.graph-editor-view.toast.nodes-duplicated"),
     EDITOR_GRAPH_EDITOR_VIEW_TOAST_DROP_FAILED("editor.graph-editor-view.toast.drop-failed"),
     EDITOR_GRAPH_EDITOR_VIEW_TOAST_UNSUPPORTED_DROP("editor.graph-editor-view.toast.unsupported-drop"),
     EDITOR_GRAPH_EDITOR_VIEW_TOAST_NO_TEXTURE_NODE("editor.graph-editor-view.toast.no-texture-node"),
