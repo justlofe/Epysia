@@ -124,6 +124,8 @@ public final class EditorView implements FrameView {
             | ImGuiWindowFlags.NoBringToFrontOnFocus
             | ImGuiWindowFlags.NoNavFocus
             | ImGuiWindowFlags.NoDocking
+            | ImGuiWindowFlags.NoScrollbar
+            | ImGuiWindowFlags.NoScrollWithMouse
             | ImGuiWindowFlags.NoSavedSettings;
 
 
