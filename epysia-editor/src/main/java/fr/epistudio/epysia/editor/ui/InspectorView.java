@@ -79,7 +79,7 @@ public final class InspectorView {
     private final Notifier notifier;
     private final IconWidgets icons;
     private final PropertyRows propertyRows;
-    private final AssetPicker assetPicker;
+    private final AssetFilePicker assetPicker;
     private final ConfirmDialog removeConfirm = new ConfirmDialog(
             I18n.translate(TextKey.EDITOR_INSPECTOR_VIEW_REMOVE_COMPONENT_TITLE),
             I18n.translate(TextKey.EDITOR_INSPECTOR_VIEW_REMOVE_COMPONENT_CONFIRM));
@@ -100,7 +100,7 @@ public final class InspectorView {
     private final SpriteTextureLookup spriteTextures;
     private final SurfaceUniformRows spriteUniformRows;
 
-    public InspectorView(InspectorDependencies dependencies, AssetPicker assetPicker,
+    public InspectorView(InspectorDependencies dependencies, AssetFilePicker assetPicker,
                          Consumer<GameObject> onRequestNewScript,
                          Consumer<Path> onOpenGraph,
                          Supplier<Optional<Path>> selectedAssetPath,

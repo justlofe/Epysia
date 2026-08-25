@@ -226,7 +226,7 @@ public final class EditorView implements FrameView {
         this.vfxPreviewPanel = new VfxPreviewPanel(sceneHost.window(), sceneHost.backend());
         this.graphEditorView = new GraphEditorView(componentRegistry, toasts, active,
                 thumbnailCache, this::onShaderGraphGenerated, shaderGraphPreviews, vfxPreviewPanel,
-                new AssetPicker(project), () -> preferences.shaderNodePreviewsEnabled(),
+                new AssetFilePicker(project, thumbnailCache), () -> preferences.shaderNodePreviewsEnabled(),
                 this::onShaderNodePreviewsToggled, this::projectActionNames, icons);
         this.proceduralPreview = new ProceduralTexturePreview(sceneHost.backend());
         this.assetReloads = new AssetReloadService(project.rootDirectory(), sceneHost::engine,
@@ -245,7 +245,7 @@ public final class EditorView implements FrameView {
         this.inspectorView = new InspectorView(
                 new InspectorDependencies(active, componentRegistry, toasts, icons, thumbnailCache,
                         project, objectFactory, sceneHost.engine()),
-                new AssetPicker(project), this::promptNewScriptFor,
+                new AssetFilePicker(project, thumbnailCache), this::promptNewScriptFor,
                 graphEditorView::open, this::selectedBrowserAssetPath,
                 new AtlasInspectorSection(spriteEditorWindow::open),
                 new TextureInspectorSection(imagePreview, this::onTextureFilterChanged),
