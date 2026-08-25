@@ -4,6 +4,7 @@ import fr.epistudio.epysia.editor.shell.EditorScale;
 import fr.epistudio.epysia.assets.AssetMetaFile;
 import fr.epistudio.epysia.assets.loaders.MeshAssetLoader;
 import fr.epistudio.epysia.editor.assets.AssetEntry;
+import fr.epistudio.epysia.editor.assets.EditorAssetPaths;
 import fr.epistudio.epysia.editor.assets.FileManagerReveal;
 import fr.epistudio.epysia.editor.assets.AssetFileNames;
 import fr.epistudio.epysia.editor.assets.AssetQuery;
@@ -871,7 +872,8 @@ public final class AssetBrowserView {
         if (mimeType.isEmpty() || !ImGui.beginDragDropSource()) {
             return;
         }
-        ImGui.setDragDropPayload(mimeType, entry.assetPath());
+        ImGui.setDragDropPayload(mimeType,
+                EditorAssetPaths.stored(project.locator(), entry.assetPath()));
         icons.drawInline(AssetTypeIcons.iconFor(entry.type()), EditorStyle.iconSizeSmall());
         ImGui.textUnformatted(entry.displayName());
         ImGui.endDragDropSource();

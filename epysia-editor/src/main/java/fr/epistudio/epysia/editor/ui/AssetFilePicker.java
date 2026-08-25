@@ -3,6 +3,7 @@ package fr.epistudio.epysia.editor.ui;
 import fr.epistudio.epysia.editor.shell.EditorScale;
 import fr.epistudio.epysia.editor.assets.EditorAssetPaths;
 import fr.epistudio.epysia.editor.assets.ThumbnailCache;
+import fr.epistudio.epysia.editor.inspector.AssetMimeTypes;
 import fr.epistudio.epysia.i18n.I18n;
 import fr.epistudio.epysia.i18n.TextKey;
 import fr.epistudio.epysia.assets.AssetScheme;
@@ -58,6 +59,24 @@ public final class AssetFilePicker {
     public void useDatabase(
             Supplier<Optional<AssetDatabase>> source) {
         this.database = source;
+    }
+
+    public void open(Class<?> assetType, boolean clearable, Consumer<String> pickedHandler) {
+        String mimeType = AssetMimeTypes.forAssetType(assetType);
+        onPicked = pickedHandler;
+        allowClear = clearable;
+        candidates = withPresets(mimeType, scanProject(AssetKinds.extensionsFor(mimeType)));
+        filterInput.set("");
+        openRequested = true;
+    }
+
+    private static List<String> withPresets(String mimeType, List<String> found) {
+        if (!AssetMimeTypes.MESH.equals(mimeType)) {
+            return found;
+        }
+        List<String> combined = new java.util.ArrayList<>(AssetKinds.MESH_PRESETS);
+        combined.addAll(found);
+        return List.copyOf(combined);
     }
 
     public void open(Set<String> extensions, boolean clearable, Consumer<String> pickedHandler) {
