@@ -688,7 +688,7 @@ public enum TextKey {
     EDITOR_PROJECT_SELECTOR_VIEW_TOAST_COULD_NOT_CLEAR("editor.project-selector-view.toast.could-not-clear"),
     EDITOR_PROJECT_SELECTOR_VIEW_TODAY("editor.project-selector-view.today"),
     EDITOR_PROJECT_SELECTOR_VIEW_YESTERDAY("editor.project-selector-view.yesterday"),
-    EDITOR_PROJECT_SELECTOR_VIEW_DAYS_AGO("editor.project-selector-view.days-ago"),
+    EDITOR_PROJECT_SELECTOR_VIEW_DAYS_AGO_COUNT("editor.project-selector-view.days-ago-count"),
     EDITOR_PROJECT_SELECTOR_VIEW_SEARCH_HINT("editor.project-selector-view.search-hint"),
     EDITOR_PROJECT_SELECTOR_VIEW_FILTER_ALL("editor.project-selector-view.filter-all"),
     EDITOR_PROJECT_SELECTOR_VIEW_FILTER_PINNED("editor.project-selector-view.filter-pinned"),
