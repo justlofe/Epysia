@@ -5,6 +5,7 @@ import fr.epistudio.epysia.editor.preferences.EditorPreferences;
 import fr.epistudio.epysia.editor.shell.EditorScale;
 import fr.epistudio.epysia.editor.shell.EditorStyle;
 import fr.epistudio.epysia.editor.ui.kit.Notices;
+import fr.epistudio.epysia.editor.BuildInfo;
 import fr.epistudio.epysia.editor.ui.settings.CollisionMatrixSection;
 import fr.epistudio.epysia.editor.ui.settings.InputActionsSection;
 import fr.epistudio.epysia.editor.ui.settings.NetworkSection;
@@ -619,7 +620,8 @@ public final class SettingsDialog implements SettingsChrome {
             return;
         }
         row("Name", () -> ImGui.textUnformatted(project.name()));
-        row("Engine version", () -> ImGui.textUnformatted(project.engineVersion()));
+        row("Engine version", () -> ImGui.textUnformatted(BuildInfo.load().version()));
+        row("Project format", () -> ImGui.textUnformatted(project.engineVersion()));
         row("Root directory", () -> ImGui.textUnformatted(project.rootDirectory().toString()));
         row("Default scene", () -> ImGui.textUnformatted(project.defaultScenePath().getFileName().toString()));
         row("Icon", () -> projectIconSection.render(project));

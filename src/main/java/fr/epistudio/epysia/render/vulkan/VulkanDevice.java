@@ -12,6 +12,7 @@ import org.lwjgl.vulkan.KHRSurface;
 import org.lwjgl.vulkan.KHRSwapchain;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK13;
+import org.lwjgl.vulkan.VkExtensionProperties;
 import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkDeviceCreateInfo;
 import org.lwjgl.vulkan.VkDeviceQueueCreateInfo;
@@ -26,7 +27,13 @@ import org.lwjgl.vulkan.VkPhysicalDeviceVulkan13Features;
 import org.lwjgl.vulkan.VkQueue;
 import org.lwjgl.vulkan.VkQueueFamilyProperties;
 
+import fr.epistudio.epysia.exceptions.EpysiaException;
+
 import java.nio.IntBuffer;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 public final class VulkanDevice implements AutoCloseable {
 
@@ -163,19 +170,51 @@ public final class VulkanDevice implements AutoCloseable {
 
     private VkDevice createLogicalDevice() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
+            Set<String> available = availableExtensions(stack);
+            if (!available.contains(KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
+                throw new EpysiaException("This GPU does not offer "
+                        + KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME + ", so it cannot present.");
+            }
+            List<String> wanted = enabledExtensions(available);
             VkDeviceCreateInfo createInfo = VkDeviceCreateInfo.calloc(stack)
                     .sType(VK10.VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO)
                     .pQueueCreateInfos(queueCreateInfos(stack))
-                    .ppEnabledExtensionNames(stack.pointers(
-                            stack.UTF8(KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME),
-                            stack.UTF8(EXTVertexAttributeRobustness.VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS_EXTENSION_NAME),
-                            stack.UTF8(KHRPipelineExecutableProperties.VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME)))
-                    .pNext(requiredFeatures(stack).address());
+                    .ppEnabledExtensionNames(namesOf(stack, wanted))
+                    .pNext(requiredFeatures(stack, wanted).address());
             PointerBuffer created = stack.mallocPointer(1);
             VulkanResult.check(VK10.vkCreateDevice(physicalDevice, createInfo, null, created),
                     "vkCreateDevice");
             return new VkDevice(created.get(0), physicalDevice, createInfo);
         }
+    }
+
+    private static List<String> enabledExtensions(Set<String> available) {
+        List<String> wanted = new ArrayList<>();
+        wanted.add(KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        for (String optional : List.of(
+                EXTVertexAttributeRobustness.VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS_EXTENSION_NAME,
+                KHRPipelineExecutableProperties.VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME)) {
+            if (available.contains(optional)) {
+                wanted.add(optional);
+            }
+        }
+        return List.copyOf(wanted);
+    }
+
+    private static PointerBuffer namesOf(MemoryStack stack, List<String> extensions) {
+        PointerBuffer names = stack.mallocPointer(extensions.size());
+        extensions.forEach(name -> names.put(stack.UTF8(name)));
+        return names.flip();
+    }
+
+    private Set<String> availableExtensions(MemoryStack stack) {
+        IntBuffer count = stack.mallocInt(1);
+        VK10.vkEnumerateDeviceExtensionProperties(physicalDevice, (String) null, count, null);
+        VkExtensionProperties.Buffer properties = VkExtensionProperties.malloc(count.get(0), stack);
+        VK10.vkEnumerateDeviceExtensionProperties(physicalDevice, (String) null, count, properties);
+        Set<String> names = new HashSet<>();
+        properties.forEach(property -> names.add(property.extensionNameString()));
+        return names;
     }
 
     private VkDeviceQueueCreateInfo.Buffer queueCreateInfos(MemoryStack stack) {
@@ -185,22 +224,34 @@ public final class VulkanDevice implements AutoCloseable {
                 .pQueuePriorities(stack.floats(1.0f));
     }
 
-    private static VkPhysicalDeviceFeatures2 requiredFeatures(MemoryStack stack) {
-        VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR executableProperties =
-                VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR.calloc(stack)
-                        .sType$Default()
-                        .pipelineExecutableInfo(true);
-        VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT attributeRobustness =
-                VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT.calloc(stack)
-                        .sType$Default()
-                        .vertexAttributeRobustness(!Boolean.getBoolean("epysia.vulkan.noAttributeRobustness"))
-                        .pNext(executableProperties.address());
+    private static long optionalFeatureChain(MemoryStack stack, List<String> extensions) {
+        long chain = VK10.VK_NULL_HANDLE;
+        if (extensions.contains(
+                KHRPipelineExecutableProperties.VK_KHR_PIPELINE_EXECUTABLE_PROPERTIES_EXTENSION_NAME)) {
+            chain = VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR.calloc(stack)
+                    .sType$Default()
+                    .pipelineExecutableInfo(true)
+                    .address();
+        }
+        if (extensions.contains(
+                EXTVertexAttributeRobustness.VK_EXT_VERTEX_ATTRIBUTE_ROBUSTNESS_EXTENSION_NAME)) {
+            chain = VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT.calloc(stack)
+                    .sType$Default()
+                    .vertexAttributeRobustness(!Boolean.getBoolean("epysia.vulkan.noAttributeRobustness"))
+                    .pNext(chain)
+                    .address();
+        }
+        return chain;
+    }
+
+    private static VkPhysicalDeviceFeatures2 requiredFeatures(MemoryStack stack, List<String> extensions) {
+        long optionalChain = optionalFeatureChain(stack, extensions);
         VkPhysicalDeviceVulkan13Features thirteen = VkPhysicalDeviceVulkan13Features.calloc(stack)
                 .sType$Default()
                 .dynamicRendering(true)
                 .synchronization2(true)
                 .shaderDemoteToHelperInvocation(true)
-                .pNext(attributeRobustness.address());
+                .pNext(optionalChain);
         VkPhysicalDeviceVulkan12Features twelve = VkPhysicalDeviceVulkan12Features.calloc(stack)
                 .sType$Default()
                 .timelineSemaphore(true)

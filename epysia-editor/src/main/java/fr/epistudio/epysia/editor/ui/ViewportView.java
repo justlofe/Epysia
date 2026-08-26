@@ -173,6 +173,9 @@ public final class ViewportView {
     private Optional<UUID> pinnedCameraId = Optional.empty();
     private boolean previewClickConsumed;
     private boolean viewportHoveredThisFrame;
+    private boolean lookGesture;
+    private boolean orbitGesture;
+    private boolean panGesture;
     private boolean viewportFocusedThisFrame;
     private boolean billboardClickConsumed;
     private boolean paintingActiveThisFrame;
@@ -1128,16 +1131,25 @@ public final class ViewportView {
         }
     }
 
+    private boolean heldGesture(boolean alreadyRunning, boolean buttonHeld) {
+        if (!buttonHeld) {
+            return false;
+        }
+        return alreadyRunning || viewportHoveredThisFrame;
+    }
+
     private void updateCamera(float deltaSeconds, float imageX, float imageY, int width, int height) {
         editorCamera.updateFraming(deltaSeconds);
         if (editorCamera.twoDimensional()) {
             updateTwoDimensionalNavigation(height);
             return;
         }
-        boolean rightHeld = viewportHoveredThisFrame
-                && GLFW.glfwGetMouseButton(windowHandle, GLFW.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS;
-        boolean orbitHeld = viewportHoveredThisFrame && !rightHeld && ImGui.getIO().getKeyAlt()
-                && GLFW.glfwGetMouseButton(windowHandle, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
+        boolean rightHeld = heldGesture(lookGesture,
+                GLFW.glfwGetMouseButton(windowHandle, GLFW.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS);
+        lookGesture = rightHeld;
+        boolean orbitHeld = heldGesture(orbitGesture, !rightHeld && ImGui.getIO().getKeyAlt()
+                && GLFW.glfwGetMouseButton(windowHandle, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS);
+        orbitGesture = orbitHeld;
         editorCamera.updateLook(ImGui.getMousePosX(), ImGui.getMousePosY(), rightHeld);
         editorCamera.updateOrbit(ImGui.getMousePosX(), ImGui.getMousePosY(), orbitHeld);
         applyScrollNavigation(rightHeld);
@@ -1152,9 +1164,10 @@ public final class ViewportView {
     }
 
     private void updateTwoDimensionalNavigation(int height) {
-        boolean panHeld = viewportHoveredThisFrame
-                && (mouseButtonHeld(GLFW.GLFW_MOUSE_BUTTON_MIDDLE)
+        boolean panHeld = heldGesture(panGesture,
+                mouseButtonHeld(GLFW.GLFW_MOUSE_BUTTON_MIDDLE)
                         || (!paintingActiveThisFrame && mouseButtonHeld(GLFW.GLFW_MOUSE_BUTTON_RIGHT)));
+        panGesture = panHeld;
         float unitsPerPixel = 2.0f * editorCamera.orthographicSize() / Math.max(1, height);
         editorCamera.updatePan(ImGui.getMousePosX(), ImGui.getMousePosY(), panHeld, unitsPerPixel);
         if (viewportHoveredThisFrame) {

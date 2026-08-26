@@ -116,10 +116,7 @@ public final class I18n {
             final String baseKey,
             final long count
     ) {
-        final PluralCategory category = PluralRules.categoryOf(
-                state.locale(),
-                count
-        );
+        final PluralCategory category = state.plurals().categoryOf(count);
 
         final String wanted = baseKey + "." + category.suffix();
 
@@ -218,7 +215,8 @@ public final class I18n {
             return new TranslationState(
                     language,
                     language.locale(),
-                    Map.copyOf(translations)
+                    Map.copyOf(translations),
+                    PluralSelector.from(translations)
             );
         } catch (final MissingResourceException exception) {
             throw new IllegalStateException(
@@ -238,7 +236,8 @@ public final class I18n {
     private record TranslationState(
             Language language,
             Locale locale,
-            Map<String, String> translations
+            Map<String, String> translations,
+            PluralSelector plurals
     ) {
         private TranslationState {
             Objects.requireNonNull(

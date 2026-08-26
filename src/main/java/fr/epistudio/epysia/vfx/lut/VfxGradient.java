@@ -44,33 +44,51 @@ public final class VfxGradient {
     }
 
     public int addColorStop(ColorStop stop) {
-        colorStops.add(stop);
-        colorStops.sort(COLOR_BY_TIME);
-        return colorStops.indexOf(stop);
+        int target = colorInsertionIndex(stop.time());
+        colorStops.add(target, stop);
+        return target;
     }
 
     public int addAlphaStop(AlphaStop stop) {
-        alphaStops.add(stop);
-        alphaStops.sort(ALPHA_BY_TIME);
-        return alphaStops.indexOf(stop);
+        int target = alphaInsertionIndex(stop.time());
+        alphaStops.add(target, stop);
+        return target;
+    }
+
+    private int colorInsertionIndex(float time) {
+        int target = 0;
+        while (target < colorStops.size() && colorStops.get(target).time() <= time) {
+            target++;
+        }
+        return target;
+    }
+
+    private int alphaInsertionIndex(float time) {
+        int target = 0;
+        while (target < alphaStops.size() && alphaStops.get(target).time() <= time) {
+            target++;
+        }
+        return target;
     }
 
     public int setColorStop(int index, ColorStop stop) {
         if (index < 0 || index >= colorStops.size()) {
             return index;
         }
-        colorStops.set(index, stop);
-        colorStops.sort(COLOR_BY_TIME);
-        return colorStops.indexOf(stop);
+        colorStops.remove(index);
+        int target = colorInsertionIndex(stop.time());
+        colorStops.add(target, stop);
+        return target;
     }
 
     public int setAlphaStop(int index, AlphaStop stop) {
         if (index < 0 || index >= alphaStops.size()) {
             return index;
         }
-        alphaStops.set(index, stop);
-        alphaStops.sort(ALPHA_BY_TIME);
-        return alphaStops.indexOf(stop);
+        alphaStops.remove(index);
+        int target = alphaInsertionIndex(stop.time());
+        alphaStops.add(target, stop);
+        return target;
     }
 
     public void removeColorStop(int index) {

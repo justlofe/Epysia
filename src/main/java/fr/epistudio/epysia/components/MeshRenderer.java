@@ -7,6 +7,7 @@ import fr.epistudio.epysia.assets.AssetUri;
 import fr.epistudio.epysia.components.transforms.Transform3D;
 import fr.epistudio.epysia.render.material.LitMaterial;
 import fr.epistudio.epysia.render.material.Material;
+import fr.epistudio.epysia.scene.serialization.MaterialJsonCodec;
 import fr.epistudio.epysia.render.material.MaterialFields;
 import fr.epistudio.epysia.render.mesh.LoadedObj;
 import fr.epistudio.epysia.render.mesh.ObjLoader;
@@ -161,8 +162,16 @@ public final class MeshRenderer extends Component implements MeshRenderSource {
     @Override
     public void copyStateFrom(IComponent source) {
         if (source instanceof MeshRenderer other) {
-            setMaterials(other.materials());
+            setMaterials(other.materials().stream().map(MeshRenderer::detachedCopyOf).toList());
         }
+    }
+
+    private static Material detachedCopyOf(Material material) {
+        if (material.isAssetBacked()) {
+            return material;
+        }
+        MaterialJsonCodec codec = new MaterialJsonCodec();
+        return codec.readSingle(codec.writeSingle(material)).orElse(material);
     }
 
     @Override

@@ -1,5 +1,6 @@
 package fr.epistudio.epysia.editor.ui;
 
+import fr.epistudio.epysia.editor.shell.EditorScale;
 import fr.epistudio.epysia.editor.ui.kit.NumberFields;
 import fr.epistudio.epysia.editor.ui.kit.Rows;
 import fr.epistudio.epysia.editor.ui.kit.Switches;
@@ -52,12 +53,14 @@ public final class PropertyRows {
     private static final float NUMERIC_RANGE_FALLBACK = 1_000_000.0f;
     private static final int STRING_CAPACITY = 512;
     private final Supplier<SceneDocument> activeDocument;
-    private final AssetPicker assetPicker;
+    private static final float ASSET_BUTTON_WIDTH = 150.0f;
+
+    private final AssetFilePicker assetPicker;
     private final Map<String, EulerCache> eulerCaches = new HashMap<>();
     private final Map<String, ImString> stringBuffers = new HashMap<>();
     private final Set<String> seenKeysThisFrame = new HashSet<>();
 
-    public PropertyRows(Supplier<SceneDocument> activeDocument, AssetPicker assetPicker) {
+    public PropertyRows(Supplier<SceneDocument> activeDocument, AssetFilePicker assetPicker) {
         this.activeDocument = activeDocument;
         this.assetPicker = assetPicker;
     }
@@ -258,7 +261,7 @@ public final class PropertyRows {
             renderAssetPathRow(owner, property);
             return;
         }
-        String current = String.valueOf(property.read());
+        String current = textOf(property.read());
         ImString buffer = stringBuffer(key, current);
         beginLabelled(property);
         if (ImGui.inputText(hidden(property), buffer) && !buffer.get().equals(current)) {
@@ -267,24 +270,37 @@ public final class PropertyRows {
     }
 
     private void renderAssetPathRow(IComponent owner, ExportedProperty property) {
-        String current = String.valueOf(property.read());
-        if (ImGui.button("...")) {
-            assetPicker.open(Set.of(property.assetExtensions()),
-                    picked -> history().execute(new SetPropertyCommand(owner, property, current, picked)));
+        String current = textOf(property.read());
+        ImGui.pushID(property.fieldName());
+        if (ImGui.button(assetLabel(current), EditorScale.of(ASSET_BUTTON_WIDTH), 0.0f)) {
+            assetPicker.open(Set.of(property.assetExtensions()), true,
+                    picked -> commitAsset(owner, property, current, picked));
+        }
+        if (ImGui.isItemHovered() && !current.isEmpty()) {
+            ImGui.setTooltip(current);
         }
         ImGui.sameLine();
-        ImGui.beginDisabled(current.isEmpty());
-        if (ImGui.button("x")) {
-            history().execute(new SetPropertyCommand(owner, property, current, ""));
-        }
-        ImGui.endDisabled();
-        ImGui.sameLine();
-        ImGui.labelText(property.label(), current.isEmpty() ? "none" : shortenPath(current));
+        ImGui.textUnformatted(property.label());
+        ImGui.popID();
     }
 
-    private static String shortenPath(String path) {
+    private void commitAsset(IComponent owner, ExportedProperty property, String before, String after) {
+        if (before.equals(after)) {
+            return;
+        }
+        history().execute(new SetPropertyCommand(owner, property, before, after));
+    }
+
+    private static String assetLabel(String path) {
+        if (path.isEmpty()) {
+            return I18n.translate(TextKey.EDITOR_PROPERTY_ROWS_NO_ASSET);
+        }
         int lastSeparator = path.lastIndexOf('/');
         return lastSeparator < 0 ? path : path.substring(lastSeparator + 1);
+    }
+
+    private static String textOf(Object value) {
+        return value instanceof String text ? text : "";
     }
 
     private void renderVector4(IComponent owner, ExportedProperty property) {
@@ -404,7 +420,7 @@ public final class PropertyRows {
         ImGui.sameLine();
         if (ImGui.button(I18n.label(TextKey.EDITOR_PROPERTY_ROWS_PICK,
                 "property-asset-picker"), pickerWidth, 0.0f)) {
-            assetPicker.open(reference.type(), path ->
+            assetPicker.open(reference.type(), true, path ->
                     applyAssetPath(owner, property, reference, buffer, path));
         }
         ImGui.sameLine();

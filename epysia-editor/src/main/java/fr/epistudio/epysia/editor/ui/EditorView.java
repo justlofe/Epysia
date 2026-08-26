@@ -25,6 +25,7 @@ import fr.epistudio.epysia.editor.command.builtin.AddComponentCommand;
 import fr.epistudio.epysia.editor.command.builtin.InstantiatePrefabCommand;
 import fr.epistudio.epysia.editor.icons.EditorIcon;
 import fr.epistudio.epysia.editor.ui.kit.DocumentTabs;
+import fr.epistudio.epysia.editor.BuildInfo;
 import fr.epistudio.epysia.editor.icons.IconWidgets;
 import fr.epistudio.epysia.editor.tilemap.TileBrush;
 import fr.epistudio.epysia.editor.importer.AssetImportPipeline;
@@ -123,6 +124,8 @@ public final class EditorView implements FrameView {
             | ImGuiWindowFlags.NoBringToFrontOnFocus
             | ImGuiWindowFlags.NoNavFocus
             | ImGuiWindowFlags.NoDocking
+            | ImGuiWindowFlags.NoScrollbar
+            | ImGuiWindowFlags.NoScrollWithMouse
             | ImGuiWindowFlags.NoSavedSettings;
 
 
@@ -226,7 +229,7 @@ public final class EditorView implements FrameView {
         this.vfxPreviewPanel = new VfxPreviewPanel(sceneHost.window(), sceneHost.backend());
         this.graphEditorView = new GraphEditorView(componentRegistry, toasts, active,
                 thumbnailCache, this::onShaderGraphGenerated, shaderGraphPreviews, vfxPreviewPanel,
-                new AssetPicker(project), () -> preferences.shaderNodePreviewsEnabled(),
+                new AssetFilePicker(project, thumbnailCache), () -> preferences.shaderNodePreviewsEnabled(),
                 this::onShaderNodePreviewsToggled, this::projectActionNames, icons);
         this.proceduralPreview = new ProceduralTexturePreview(sceneHost.backend());
         this.assetReloads = new AssetReloadService(project.rootDirectory(), sceneHost::engine,
@@ -245,7 +248,7 @@ public final class EditorView implements FrameView {
         this.inspectorView = new InspectorView(
                 new InspectorDependencies(active, componentRegistry, toasts, icons, thumbnailCache,
                         project, objectFactory, sceneHost.engine()),
-                new AssetPicker(project), this::promptNewScriptFor,
+                new AssetFilePicker(project, thumbnailCache), this::promptNewScriptFor,
                 graphEditorView::open, this::selectedBrowserAssetPath,
                 new AtlasInspectorSection(spriteEditorWindow::open),
                 new TextureInspectorSection(imagePreview, this::onTextureFilterChanged),
@@ -791,7 +794,7 @@ public final class EditorView implements FrameView {
             return;
         }
         ImGui.textUnformatted(I18n.translate(TextKey.EDITOR_EDITOR_VIEW_ABOUT_ENGINE,
-                ProjectStore.CURRENT_ENGINE_VERSION));
+                BuildInfo.load().version()));
         Texts.muted(I18n.translate(TextKey.EDITOR_EDITOR_VIEW_ABOUT_PROJECT,
                 project.name(), project.engineVersion()));
         ImGui.separator();
