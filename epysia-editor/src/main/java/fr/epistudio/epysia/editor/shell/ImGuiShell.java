@@ -1,7 +1,9 @@
 package fr.epistudio.epysia.editor.shell;
 
 import imgui.ImFont;
+import imgui.ImFontAtlas;
 import imgui.ImFontConfig;
+import imgui.ImFontGlyphRangesBuilder;
 import imgui.ImGui;
 import imgui.ImGuiIO;
 import imgui.extension.imguizmo.ImGuizmo;
@@ -166,6 +168,7 @@ public final class ImGuiShell {
         io.setIniFilename(null);
         ImFontConfig fontConfig = new ImFontConfig();
         fontConfig.setFontDataOwnedByAtlas(false);
+        fontConfig.setGlyphRanges(editorGlyphRanges(io.getFonts()));
         byte[] interfaceFont = readFontBytes(FONT_RESOURCE);
         byte[] boldFont = readFontBytes(BOLD_FONT_RESOURCE);
         io.getFonts().addFontFromMemoryTTF(interfaceFont, EditorStyle.fontPixelHeight(), fontConfig);
@@ -183,6 +186,13 @@ public final class ImGuiShell {
         EditorStyle.apply();
         imGuiGlfw.init(windowHandle, true);
         imGuiGl3.init(GLSL_VERSION);
+    }
+
+    private static short[] editorGlyphRanges(ImFontAtlas fonts) {
+        ImFontGlyphRangesBuilder builder = new ImFontGlyphRangesBuilder();
+        builder.addRanges(fonts.getGlyphRangesDefault());
+        builder.addRanges(fonts.getGlyphRangesCyrillic());
+        return builder.buildRanges();
     }
 
     public ImFont monospaceFont() {
